@@ -21,7 +21,7 @@ const ADDONS = [
   },
   {
     id: 'aio-streams',
-    name: 'AIO Streams',
+    name: 'Duck Streams',
     emoji: '🦆',
     manifestUrl: 'https://aiostreams.elfhosted.com/manifest.json',
     statusPageUrl: 'https://stremio-addons.net/addons/aiostreams',
