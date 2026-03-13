@@ -12,6 +12,7 @@ app.use(express.json());
 // ADDON DEFINITIONS
 // =====================
 const ADDONS = [
+  // --- Stremio Scrapers ---
   {
     id: 'meteor',
     name: 'Meteor',
@@ -50,12 +51,60 @@ const ADDONS = [
 ];
 
 // =====================
+// PREMIUM SERVICE DEFINITIONS
+// =====================
+const PREMIUM = [
+  {
+    id: 'real-debrid',
+    name: 'Real-Debrid',
+    emoji: '⚡',
+    pingUrl: 'https://api.real-debrid.com/rest/1.0/time/iso',
+    statusPageUrl: 'https://real-debrid.com',
+    type: 'premium',
+  },
+  {
+    id: 'premiumize',
+    name: 'Premiumize',
+    emoji: '🌀',
+    pingUrl: 'https://www.premiumize.me/api?method=account&action=info',
+    statusPageUrl: 'https://premiumize.reamaze.com/status',
+    type: 'premium',
+  },
+  {
+    id: 'torbox',
+    name: 'TorBox',
+    emoji: '📦',
+    pingUrl: 'https://api.torbox.app/v1/api/stats',
+    statusPageUrl: 'https://status.torbox.app',
+    type: 'premium',
+  },
+  {
+    id: 'alldebrid',
+    name: 'AllDebrid',
+    emoji: '🔗',
+    pingUrl: 'https://api.alldebrid.com/v4/ping',
+    statusPageUrl: 'https://alldebrid.com',
+    type: 'premium',
+  },
+  {
+    id: 'debrid-link',
+    name: 'Debrid-Link',
+    emoji: '🔐',
+    pingUrl: 'https://debrid-link.com/api/v2/downloader/hosts',
+    statusPageUrl: 'https://debrid-link.com/webapp/status',
+    type: 'premium',
+  },
+];
+
+const ALL_SERVICES = [...ADDONS, ...PREMIUM];
+
+// =====================
 // IN-MEMORY HISTORY STORE
 // hourlyData[addonId][hourKey] = { up: n, total: n }
 // recentChecks[addonId] = [...] last 120 results
 // =====================
 const store = {};
-ADDONS.forEach(a => {
+ALL_SERVICES.forEach(a => {
   store[a.id] = {
     status: 'checking',
     latency: null,
@@ -104,18 +153,21 @@ function recordCheck(addonId, isUp, latency, version, error) {
 // =====================
 // CHECKER
 // =====================
-async function checkAddon(addon) {
+async function checkService(service) {
   const startTime = Date.now();
   let isUp = false;
   let latency = null;
   let version = null;
   let error = null;
 
+  // Use manifestUrl for scrapers, pingUrl for premium services
+  const url = service.manifestUrl || service.pingUrl;
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const response = await fetch(addon.manifestUrl, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: { 'Accept': 'application/json', 'User-Agent': 'StremioUptimeMonitor/1.0' },
       signal: controller.signal,
@@ -130,6 +182,10 @@ async function checkAddon(addon) {
         version = data.version || null;
       } catch (_) {}
       isUp = true;
+    } else if (response.status === 401 || response.status === 403) {
+      // Auth required = service is UP but we're not authenticated (expected for premium)
+      isUp = true;
+      latency = Date.now() - startTime;
     } else {
       error = `HTTP ${response.status}`;
       isUp = false;
@@ -144,24 +200,24 @@ async function checkAddon(addon) {
     isUp = false;
   }
 
-  recordCheck(addon.id, isUp, latency, version, error);
-  console.log(`[${new Date().toISOString()}] ${addon.name}: ${isUp ? 'UP' : 'DOWN'} (${latency}ms)`);
+  recordCheck(service.id, isUp, latency, version, error);
+  console.log(`[${new Date().toISOString()}] ${service.name}: ${isUp ? 'UP' : 'DOWN'} (${latency}ms)`);
 }
 
 async function checkAll() {
-  await Promise.allSettled(ADDONS.map(a => checkAddon(a)));
+  await Promise.allSettled(ALL_SERVICES.map(s => checkService(s)));
 }
 
 // =====================
 // API ROUTES
 // =====================
 
-// GET /api/status — full status for all addons
+// GET /api/status — full status for all services
 app.get('/api/status', (req, res) => {
   const currentHour = getCurrentHourKey();
   const HOURS = 48;
 
-  const result = ADDONS.map(addon => {
+  function buildServiceResult(addon) {  // reuse for both groups
     const s = store[addon.id];
 
     // Build 48-slot hourly display
@@ -209,7 +265,8 @@ app.get('/api/status', (req, res) => {
       name: addon.name,
       emoji: addon.emoji,
       statusPageUrl: addon.statusPageUrl,
-      manifestUrl: addon.manifestUrl,
+      manifestUrl: addon.manifestUrl || addon.pingUrl,
+      type: addon.type || 'scraper',
       status: s.status,
       latency: s.latency,
       version: s.version,
@@ -221,9 +278,12 @@ app.get('/api/status', (req, res) => {
       checksToday,
       hourlySlots,
     };
-  });
+  }
 
-  res.json({ addons: result, serverTime: new Date().toISOString() });
+  const addons  = ADDONS.map(buildServiceResult);
+  const premium = PREMIUM.map(buildServiceResult);
+
+  res.json({ addons, premium, serverTime: new Date().toISOString() });
 });
 
 // GET /api/health — simple health check
