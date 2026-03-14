@@ -94,15 +94,16 @@ const PREMIUM = [
     statusPageUrl: 'https://debrid-link.com/webapp/status',
     type: 'premium',
   },
-  {
-    id: 'debridio',
-    name: 'Debridio',
-    emoji: '🎬',
-    pingUrl: 'https://api.debridio.com/api/health',
-    statusPageUrl: 'https://status.debridio.com',
-    type: 'premium',
-  },
 ];
+
+// Add Debridio to scrapers
+ADDONS.push({
+  id: 'debridio',
+  name: 'Debridio',
+  emoji: '🎬',
+  manifestUrl: 'https://api.debridio.com/api/health',
+  statusPageUrl: 'https://status.debridio.com',
+});
 
 const ALL_SERVICES = [...ADDONS, ...PREMIUM];
 
