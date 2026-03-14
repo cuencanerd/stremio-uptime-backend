@@ -94,6 +94,14 @@ const PREMIUM = [
     statusPageUrl: 'https://debrid-link.com/webapp/status',
     type: 'premium',
   },
+  {
+    id: 'debridio',
+    name: 'Debridio',
+    emoji: '🎬',
+    pingUrl: 'https://api.debridio.com/api/health',
+    statusPageUrl: 'https://status.debridio.com',
+    type: 'premium',
+  },
 ];
 
 const ALL_SERVICES = [...ADDONS, ...PREMIUM];
