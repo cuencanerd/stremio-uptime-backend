@@ -98,7 +98,7 @@ const PREMIUM = [
     id: 'offcloud',
     name: 'Offcloud',
     emoji: '☁️',
-    pingUrl: 'https://offcloud.com/api/check',
+    pingUrl: 'https://offcloud.com/api/cloud/explore/test',
     statusPageUrl: 'https://offcloud.com',
     type: 'premium',
   },
