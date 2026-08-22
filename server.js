@@ -94,6 +94,14 @@ const PREMIUM = [
     statusPageUrl: 'https://debrid-link.com/webapp/status',
     type: 'premium',
   },
+  {
+    id: 'offcloud',
+    name: 'Offcloud',
+    emoji: '☁️',
+    pingUrl: 'https://offcloud.com/api/check',
+    statusPageUrl: 'https://offcloud.com',
+    type: 'premium',
+  },
 ];
 
 // Add Debridio to scrapers
